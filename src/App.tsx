@@ -35,6 +35,16 @@ function currencyOneDecimalLabel(value: unknown) {
   return Number.isFinite(parsed) ? moneyOneDecimal.format(parsed) : '';
 }
 
+function absoluteCurrencyLabel(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? money.format(Math.abs(parsed)) : '';
+}
+
+function compactAbsoluteCurrencyLabel(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? `$${number.format(Math.abs(parsed) / 1000000)}M` : '';
+}
+
 function piePercentLabel(props: { cx?: string | number; cy?: string | number; midAngle?: number; outerRadius?: string | number; percent?: number }) {
   const cx = Number(props.cx ?? 0);
   const cy = Number(props.cy ?? 0);
@@ -65,9 +75,9 @@ function wasteLabel(props: { x?: string | number; y?: string | number; width?: s
 
   return (
     <g>
-      <text x={x + width / 2} y={y - 12} textAnchor="middle" fill="#344c49" fontSize={12} fontWeight={800}>{kg} kg</text>
+      <text x={x + width / 2} y={y - 12} textAnchor="middle" fill="#22b4c7" fontSize={11} fontWeight={500}>{kg} kg</text>
       <rect x={x + width / 2 - 35} y={y + 3} width="70" height="18" rx="5" fill="#f6fbf8" stroke="#b8d2cf" />
-      <text x={x + width / 2} y={y + 16} textAnchor="middle" fill="#103d38" fontSize={11} fontWeight={800}>{money.format(cost)}</text>
+      <text x={x + width / 2} y={y + 16} textAnchor="middle" fill="#22b4c7" fontSize={10} fontWeight={500}>{money.format(cost)}</text>
     </g>
   );
 }
@@ -102,7 +112,16 @@ function App() {
   const compatibleHighOptions = presentations.filter((item) => item.molecule === result.low.molecule && item.contentMg >= result.low.contentMg);
   const monthlyData = result.rows.map((row) => ({ rubro: row.rubro.replace('Tiempo de ', ''), [result.low.label]: row.low, [result.high.label]: row.high, ahorro: row.saving }));
   const pieData = result.rows.filter((row) => row.saving > 0).map((row) => ({ name: row.rubro, value: row.saving }));
-  const costDistributionData = result.rows.filter((row) => row.low > 0).map((row) => ({ name: row.rubro, value: row.low }));
+  const costComparisonRows = result.rows.filter((row) => row.rubro !== 'Costo del producto' && (row.low > 0 || row.high > 0));
+  const maxCategoryCost = Math.max(...costComparisonRows.flatMap((row) => [row.low, row.high]), 1);
+  const costComparisonData = costComparisonRows.map((row) => ({
+    category: row.rubro.replace('Tiempo de ', ''),
+    low: row.low,
+    high: row.high,
+    savingPct: row.savingPct,
+    lowPct: Math.max(1, (row.low / maxCategoryCost) * 100),
+    highPct: Math.max(1, (row.high / maxCategoryCost) * 100),
+  }));
   const lowMg = inputs.monthlyVials * result.low.contentMg;
   const highMg = result.equivalentHighVials * result.high.contentMg;
   const unitCostData = result.rows.map((row) => ({ rubro: row.rubro.replace('Tiempo de ', ''), [result.low.label]: row.low / lowMg, [result.high.label]: row.high / highMg }));
@@ -156,22 +175,31 @@ function App() {
         </div>
         <div className="summary-band">
           <div className="hero-panel">
+            <Sparkles size={17} />
             <span>Mejor opción estimada</span>
             <strong>{result.high.label}</strong>
             <small>{percent.format(result.totalSavingPct)} de ahorro mensual frente a {result.low.label}</small>
           </div>
           <div className="hero-metrics" aria-label="Resumen de comparación">
             <article>
+              <WalletCards size={17} />
               <span>Ahorro mensual</span>
               <strong>{money.format(result.totalSaving)}</strong>
             </article>
             <article>
+              <ShieldCheck size={17} />
               <span>Equivalencia</span>
               <strong>{number.format(result.equivalentHighVials)} viales</strong>
             </article>
             <article>
-              <span>Tiempo liberado</span>
-              <strong>{number.format(result.time.savedMonthly / 60)} h</strong>
+              <WalletCards size={17} />
+              <span>Costo mensual<br /><b className="summary-card-name">{result.low.label}</b></span>
+              <strong>{money.format(result.totalLow)}</strong>
+            </article>
+            <article>
+              <WalletCards size={17} />
+              <span>Costo mensual<br /><b className="summary-card-name">{result.high.label}</b></span>
+              <strong>{money.format(result.totalHigh)}</strong>
             </article>
           </div>
         </div>
@@ -220,6 +248,10 @@ function App() {
 
           <div className="chart-card wide">
             <div className="section-title"><WalletCards size={18} /> Costos mensuales por unidad generadora</div>
+            <div className="series-legend" aria-label="Leyenda de costos mensuales">
+              <span><i className="low-swatch" />{result.low.label}</span>
+              <span><i className="high-swatch" />{result.high.label}</span>
+            </div>
             <ResponsiveContainer width="100%" height={310}>
               <BarChart data={monthlyData} margin={{ top: 10, right: 8, left: -18, bottom: 58 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -252,8 +284,12 @@ function App() {
 
           <div className="chart-card wide">
             <div className="section-title"><BarChart3 size={18} /> Costo por miligramo por unidad generadora</div>
+            <div className="series-legend" aria-label="Leyenda de costo por miligramo">
+              <span><i className="low-swatch" />{result.low.label}</span>
+              <span><i className="high-swatch" />{result.high.label}</span>
+            </div>
             <ResponsiveContainer width="100%" height={310}>
-              <BarChart data={unitCostData} layout="vertical" margin={{ top: 8, right: 58, left: 116, bottom: 8 }}>
+              <BarChart data={unitCostData} layout="vertical" margin={{ top: 10, right: 58, left: 116, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" tickFormatter={(value) => moneyOneDecimal.format(Number(value))} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="rubro" width={112} tick={{ fontSize: 11 }} />
@@ -291,17 +327,33 @@ function App() {
             <div className="legend-list">{pieData.map((row, index) => <span key={row.name}><i style={{ background: colors[index % colors.length] }} />{row.name}</span>)}</div>
           </div>
 
-          <div className="chart-card">
-            <div className="section-title"><BarChart3 size={18} /> Distribución de costos de {result.low.label}</div>
-            <ResponsiveContainer width="100%" height={255}>
-              <PieChart>
-                <Pie data={costDistributionData} dataKey="value" nameKey="name" innerRadius={52} outerRadius={86} paddingAngle={2}>
-                  {costDistributionData.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
-                </Pie>
-                <Tooltip formatter={(value) => money.format(Number(value))} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="legend-list">{costDistributionData.slice(0, 5).map((row, index) => <span key={row.name}><i style={{ background: colors[index % colors.length] }} />{row.name}</span>)}</div>
+          <div className="chart-card cost-compare-card">
+            <div className="section-title"><BarChart3 size={18} /> Comparativo de costos por categoría (excepto precio producto)</div>
+            <div className="series-legend" aria-label="Leyenda de costos por presentación">
+              <span><i className="low-swatch" />{result.low.label}</span>
+              <span><i className="high-swatch" />{result.high.label}</span>
+            </div>
+            <div className="diverging-chart" aria-label="Comparativo de costos por categoría">
+              {costComparisonData.map((row) => (
+                <div className="diverging-row" key={row.category}>
+                  <div className="diverging-category">{row.category}</div>
+                  <div className="diverging-track">
+                    <span className="center-line" />
+                    <span className="saving-pct-badge">{percent.format(row.savingPct)}</span>
+                    <span className="grid-line left-quarter" />
+                    <span className="grid-line right-quarter" />
+                    <div className="bar-side left-side">
+                      <span className="bar-value low-value" style={{ right: `calc(${row.lowPct}% + 8px)` }}>{money.format(row.low)}</span>
+                      <span className="diverging-bar low-bar" style={{ width: `${row.lowPct}%` }} />
+                    </div>
+                    <div className="bar-side right-side">
+                      <span className="diverging-bar high-bar" style={{ width: `${row.highPct}%` }} />
+                      <span className="bar-value high-value" style={{ left: `calc(${row.highPct}% + 8px)` }}>{money.format(row.high)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="chart-card">
@@ -313,17 +365,17 @@ function App() {
                 <YAxis type="category" dataKey="item" width={92} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value) => `${number.format(Number(value))} min`} />
                 <Bar dataKey={result.low.label} fill="#2c4975" radius={[0, 6, 6, 0]}>
-                  <LabelList dataKey={result.low.label} position="right" formatter={minuteLabel} />
+                  <LabelList dataKey={result.low.label} position="right" formatter={minuteLabel} fontSize={11} fontWeight={500} fill="#2c4975" />
                 </Bar>
                 <Bar dataKey={result.high.label} fill="#22b4c7" radius={[0, 6, 6, 0]}>
-                  <LabelList dataKey={result.high.label} position="right" formatter={minuteLabel} />
+                  <LabelList dataKey={result.high.label} position="right" formatter={minuteLabel} fontSize={11} fontWeight={500} fill="#22b4c7" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="chart-card">
-            <div className="section-title"><Clock3 size={18} /> Ahorro en tiempos y salarios</div>
+            <div className="section-title"><Clock3 size={18} /> Ahorro en tiempos y salarios (mensual)</div>
             <ResponsiveContainer width="100%" height={255}>
               <BarChart data={timeSavingsData} margin={{ top: 18, right: 24, left: -12, bottom: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -332,17 +384,17 @@ function App() {
                 <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `$${Math.round(Number(value) / 1000)}k`} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value, name) => name === 'ahorro' ? money.format(Number(value)) : `${number.format(Number(value))} min`} />
                 <Bar yAxisId="left" dataKey="tiempo" name="Tiempo ahorrado" fill="#22b4c7" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="tiempo" position="top" formatter={minuteLabel} />
+                  <LabelList dataKey="tiempo" position="top" formatter={minuteLabel} fontSize={11} fontWeight={500} fill="#22b4c7" />
                 </Bar>
                 <Bar yAxisId="right" dataKey="ahorro" name="Ahorro económico" fill="#2c4975" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="ahorro" position="top" formatter={currencyLabel} />
+                  <LabelList dataKey="ahorro" position="top" formatter={currencyLabel} fontSize={11} fontWeight={500} fill="#2c4975" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="chart-card">
-            <div className="section-title"><Leaf size={18} /> Ahorro en disposición total de residuos</div>
+            <div className="section-title"><Leaf size={18} /> Ahorro en disposición total de residuos (mensual)</div>
             <ResponsiveContainer width="100%" height={255}>
               <BarChart data={wasteData} margin={{ top: 18, right: 26, left: -14, bottom: 22 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -363,18 +415,52 @@ function App() {
           </div>
 
           <div className="chart-card">
-            <div className="section-title"><Boxes size={18} /> Ahorro en almacenamiento</div>
+            <div className="section-title"><Boxes size={18} /> Ahorro en almacenamiento (mensual)</div>
             <ResponsiveContainer width="100%" height={255}>
               <BarChart data={storageData} margin={{ top: 18, right: 26, left: -14, bottom: 22 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="item" tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={(value) => money.format(Number(value))} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value, name) => name === 'costo' ? money.format(Number(value)) : `${number.format(Number(value))} m³`} />
-                <Bar dataKey="costo" name="Costo mensual de almacenamiento" fill="#8fa8cf" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="costo" position="top" formatter={currencyLabel} />
+                <Bar dataKey="costo" name="Costo mensual de almacenamiento" fill="#2c4975" radius={[6, 6, 0, 0]}>
+                  <LabelList dataKey="costo" position="top" formatter={currencyLabel} fontSize={11} fontWeight={500} fill="#2c4975" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="chart-card savings-detail-card">
+            <div className="section-title"><WalletCards size={18} /> Detalle de ahorro mensual basado en el consumo mensual de {result.low.label} por {number.format(inputs.monthlyVials)} viales</div>
+            <div className="summary-table-wrap">
+              <table className="summary-table">
+                <thead>
+                  <tr>
+                    <th>Rubro</th>
+                    <th>{result.low.label}</th>
+                    <th>{result.high.label}</th>
+                    <th>Ahorro económico mensual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.rows.map((row) => (
+                    <tr key={row.rubro}>
+                      <td>{row.rubro}</td>
+                      <td>{money.format(row.low)}</td>
+                      <td>{money.format(row.high)}</td>
+                      <td>{money.format(row.saving)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th>Total mensual</th>
+                    <th>{money.format(result.totalLow)}</th>
+                    <th>{money.format(result.totalHigh)}</th>
+                    <th>{money.format(result.totalSaving)}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </section>
       </section>

@@ -1,49 +1,49 @@
 {
-  "hash": "d8fa5cc8",
-  "configHash": "885e9ca4",
+  "hash": "71f90619",
+  "configHash": "f95fe86d",
   "lockfileHash": "3ed25879",
-  "browserHash": "d9c4fe5c",
+  "browserHash": "e5bcd8af",
   "optimized": {
     "lucide-react": {
-      "src": "../../lucide-react/dist/esm/lucide-react.mjs",
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.mjs",
       "file": "lucide-react.js",
-      "fileHash": "9b29f33c",
+      "fileHash": "e956355a",
       "needsInterop": false
     },
     "react-dom": {
-      "src": "../../react-dom/index.js",
+      "src": "../../node_modules/react-dom/index.js",
       "file": "react-dom.js",
-      "fileHash": "5e8ad8e4",
+      "fileHash": "007c1c10",
       "needsInterop": true
     },
     "react-dom/client": {
-      "src": "../../react-dom/client.js",
+      "src": "../../node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "35265387",
+      "fileHash": "bdd819f1",
       "needsInterop": true
     },
     "react": {
-      "src": "../../react/index.js",
+      "src": "../../node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "b4dcca24",
+      "fileHash": "1a8c66d9",
       "needsInterop": true
     },
     "react/jsx-dev-runtime": {
-      "src": "../../react/jsx-dev-runtime.js",
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "a28e3d0f",
+      "fileHash": "d3d2b645",
       "needsInterop": true
     },
     "react/jsx-runtime": {
-      "src": "../../react/jsx-runtime.js",
+      "src": "../../node_modules/react/jsx-runtime.js",
       "file": "react_jsx-runtime.js",
-      "fileHash": "12ebb258",
+      "fileHash": "d3cd9374",
       "needsInterop": true
     },
     "recharts": {
-      "src": "../../recharts/es6/index.js",
+      "src": "../../node_modules/recharts/es6/index.js",
       "file": "recharts.js",
-      "fileHash": "08e2b295",
+      "fileHash": "3f0cf3b7",
       "needsInterop": false
     }
   },
