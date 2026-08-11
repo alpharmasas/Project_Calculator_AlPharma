@@ -18,7 +18,7 @@ export const defaults = {
   monthlyVials: 100,
   lowPrice: 7892,
   highPrice: 50700,
-  pharmacistSalary: 1800000,
+  pharmacistSalary: 5000000,
   assistantSalary: 2500000,
   storageCostM3: 75000,
   otherLow: 0,
