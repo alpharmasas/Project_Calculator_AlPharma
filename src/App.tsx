@@ -236,6 +236,169 @@ function App() {
     setInputs((current) => ({ ...current, highId: selected.id, highPrice: selected.defaultPrice }));
   };
 
+  const reportHeader = (title: string) => (
+    <header className="report-header">
+      <img src={logoAlpharma} alt="Al Pharma - Una Esperanza de Vida" />
+      <div>
+        <span>Informe de comparación farmacéutica</span>
+        <h2>{title}</h2>
+      </div>
+    </header>
+  );
+
+  const reportSummary = (
+    <section className="report-summary">
+      <div>
+        <span>Presentación base</span>
+        <strong>{result.low.label}</strong>
+        <small>{number.format(inputs.monthlyVials)} viales mensuales</small>
+      </div>
+      <div>
+        <span>Presentación comparada</span>
+        <strong>{result.high.label}</strong>
+        <small>{number.format(result.equivalentHighVials)} viales equivalentes</small>
+      </div>
+      <div className="report-info-card">
+        <span>Institución</span>
+        <strong>{inputs.institution || 'Sin registrar'}</strong>
+        <span>Usuario</span>
+        <strong>{inputs.user || 'Sin registrar'}</strong>
+        <span>Fecha de consulta</span>
+        <strong>{consultationDate}</strong>
+      </div>
+    </section>
+  );
+
+  const reportKpiStrip = (
+    <section className="report-kpi-strip" aria-label="Indicadores destacados del informe">
+      <article>
+        <WalletCards size={16} />
+        <span>Costo ahorro en plata</span>
+        <strong>{money.format(result.totalSaving)}</strong>
+        <small>{money.format(result.annualSaving)} proyectado al año</small>
+      </article>
+      <article>
+        <Users size={16} />
+        <span>Recurso humano</span>
+        <strong>{number.format(result.time.savedMonthly / 60)} h/mes</strong>
+        <small>{money.format(result.time.salarySavingAnnual)} ahorrados al año</small>
+      </article>
+      <article>
+        <Boxes size={16} />
+        <span>Almacenamiento</span>
+        <strong>{money.format(result.storage.annualSaving)}</strong>
+        <small>{number.format(result.storage.savedM3)} m3 liberados al mes</small>
+      </article>
+      <article>
+        <Recycle size={16} />
+        <span>Recolección desechos</span>
+        <strong>{money.format(result.waste.savedIncinerationAnnual)}</strong>
+        <small>{number.format(result.waste.savedAnnualKg)} kg evitados al año</small>
+      </article>
+    </section>
+  );
+
+  const reportCharts = (
+    <>
+      <section className="report-charts">
+        <div className="report-chart-card">
+          <h3>Costos mensuales por unidad generadora</h3>
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={monthlyData} margin={{ top: 34, right: 6, left: -18, bottom: 42 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="rubro" angle={-32} textAnchor="end" interval={0} height={64} tick={{ fontSize: 9 }} />
+              <YAxis tickFormatter={(value) => `$${Math.round(Number(value) / 1000000)}M`} tick={{ fontSize: 9 }} />
+              <Tooltip formatter={(value) => money.format(Number(value))} />
+              <Bar dataKey={result.low.label} fill="#2c4975" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={result.low.label} content={(labelProps) => reportVerticalMoneyLabel({
+                  x: labelProps.x,
+                  y: labelProps.y,
+                  width: labelProps.width,
+                  value: labelProps.value,
+                  color: '#2c4975',
+                })} />
+              </Bar>
+              <Bar dataKey={result.high.label} fill="#22b4c7" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey={result.high.label} content={(labelProps) => reportVerticalMoneyLabel({
+                  x: labelProps.x,
+                  y: labelProps.y,
+                  width: labelProps.width,
+                  value: labelProps.value,
+                  color: '#0f766e',
+                })} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="report-chart-card">
+          <h3>Distribución del ahorro</h3>
+          <ResponsiveContainer width="100%" height={210}>
+            <PieChart>
+              <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={44} outerRadius={76} paddingAngle={2} label={reportPieLabel} labelLine={false}>
+                {pieData.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
+              </Pie>
+              <Tooltip formatter={(value) => money.format(Number(value))} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+      <section className="report-table-block">
+        <h3>Detalle económico mensual</h3>
+        <table>
+          <thead><tr><th>Rubro</th><th>{result.low.label}</th><th>{result.high.label}</th><th>Ahorro</th></tr></thead>
+          <tbody>
+            {result.rows.map((row) => <tr key={row.rubro}><td>{row.rubro}</td><td>{money.format(row.low)}</td><td>{money.format(row.high)}</td><td>{money.format(row.saving)}</td></tr>)}
+          </tbody>
+        </table>
+      </section>
+    </>
+  );
+
+  const reportTechnical = (
+    <>
+      <section className="technical-grid">
+        <div className="report-table-block">
+          <h3>Métricas principales</h3>
+          <table>
+            <tbody>{reportMetrics.map(([label, value]) => <tr key={label}><td>{label}</td><td>{value}</td></tr>)}</tbody>
+          </table>
+        </div>
+        <div className="report-table-block">
+          <h3>Equivalencias operativas</h3>
+          <table>
+            <tbody>
+              <tr><td>Contenido base</td><td>{number.format(result.low.contentMg)} mg por vial</td></tr>
+              <tr><td>Contenido comparado</td><td>{number.format(result.high.contentMg)} mg por vial</td></tr>
+              <tr><td>Miligramos mensuales requeridos</td><td>{number.format(lowMg)} mg</td></tr>
+              <tr><td>Viales equivalentes alta concentración</td><td>{number.format(result.equivalentHighVials)}</td></tr>
+              <tr><td>Costo por mg base</td><td>{moneyOneDecimal.format(result.costPerMg.low)}</td></tr>
+              <tr><td>Costo por mg comparado</td><td>{moneyOneDecimal.format(result.costPerMg.high)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="report-table-block">
+        <h3>Detalle técnico por rubro</h3>
+        <table>
+          <thead><tr><th>Rubro</th><th>Base</th><th>Comparado</th><th>Diferencia</th><th>% ahorro</th></tr></thead>
+          <tbody>
+            {result.rows.map((row) => <tr key={row.rubro}><td>{row.rubro}</td><td>{money.format(row.low)}</td><td>{money.format(row.high)}</td><td>{money.format(row.saving)}</td><td>{percent.format(row.savingPct)}</td></tr>)}
+          </tbody>
+        </table>
+      </section>
+      <section className="technical-grid compact">
+        <div className="report-table-block">
+          <h3>Tiempos</h3>
+          <table><tbody><tr><td>Químico evitado</td><td>{number.format(result.time.savedPharmacistMinutes)} min/mes</td></tr><tr><td>Regente + recepción evitado</td><td>{number.format(result.time.savedAssistantMinutes)} min/mes</td></tr><tr><td>Total evitado</td><td>{number.format(result.time.savedMonthly)} min/mes</td></tr></tbody></table>
+        </div>
+        <div className="report-table-block">
+          <h3>Residuos y almacenamiento</h3>
+          <table><tbody><tr><td>Residuo mensual base</td><td>{number.format(result.waste.lowKg)} kg</td></tr><tr><td>Residuo mensual comparado</td><td>{number.format(result.waste.highKg)} kg</td></tr><tr><td>Espacio mensual liberado</td><td>{number.format(result.storage.savedM3)} m³</td></tr></tbody></table>
+        </div>
+      </section>
+    </>
+  );
+
   return (
     <main>
       <section className="hero">
@@ -628,158 +791,25 @@ function App() {
               <button className="print-button" type="button" onClick={() => window.print()}><Printer size={17} /> Imprimir</button>
             </div>
 
-            <article className={`report-sheet ${reportVersion === 'technical' ? 'technical-report' : ''}`}>
-              <header className="report-header">
-                <img src={logoAlpharma} alt="Al Pharma - Una Esperanza de Vida" />
-                <div>
-                  <span>Informe de comparación farmacéutica</span>
-                  <h2>{reportVersion === 'charts' ? 'Resumen ejecutivo con gráficos' : 'Informe técnico de equivalencias y métricas'}</h2>
-                </div>
-              </header>
-
-              <section className="report-summary">
-                <div>
-                  <span>Presentación base</span>
-                  <strong>{result.low.label}</strong>
-                  <small>{number.format(inputs.monthlyVials)} viales mensuales</small>
-                </div>
-                <div>
-                  <span>Presentación comparada</span>
-                  <strong>{result.high.label}</strong>
-                  <small>{number.format(result.equivalentHighVials)} viales equivalentes</small>
-                </div>
-                <div className="report-info-card">
-                  <span>Institución</span>
-                  <strong>{inputs.institution || 'Sin registrar'}</strong>
-                  <span>Usuario</span>
-                  <strong>{inputs.user || 'Sin registrar'}</strong>
-                  <span>Fecha de consulta</span>
-                  <strong>{consultationDate}</strong>
-                </div>
-              </section>
-
-              {reportVersion === 'charts' ? <>
-                <section className="report-kpi-strip" aria-label="Indicadores destacados del informe">
-                  <article>
-                    <WalletCards size={16} />
-                    <span>Costo ahorro en plata</span>
-                    <strong>{money.format(result.totalSaving)}</strong>
-                    <small>{money.format(result.annualSaving)} proyectado al año</small>
-                  </article>
-                  <article>
-                    <Users size={16} />
-                    <span>Recurso humano</span>
-                    <strong>{number.format(result.time.savedMonthly / 60)} h/mes</strong>
-                    <small>{money.format(result.time.salarySavingAnnual)} ahorrados al año</small>
-                  </article>
-                  <article>
-                    <Boxes size={16} />
-                    <span>Almacenamiento</span>
-                    <strong>{money.format(result.storage.annualSaving)}</strong>
-                    <small>{number.format(result.storage.savedM3)} m3 liberados al mes</small>
-                  </article>
-                  <article>
-                    <Recycle size={16} />
-                    <span>Recolección desechos</span>
-                    <strong>{money.format(result.waste.savedIncinerationAnnual)}</strong>
-                    <small>{number.format(result.waste.savedAnnualKg)} kg evitados al año</small>
-                  </article>
-                </section>
-
-                <section className="report-charts">
-                  <div className="report-chart-card">
-                    <h3>Costos mensuales por unidad generadora</h3>
-                    <ResponsiveContainer width="100%" height={210}>
-                      <BarChart data={monthlyData} margin={{ top: 34, right: 6, left: -18, bottom: 42 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="rubro" angle={-32} textAnchor="end" interval={0} height={64} tick={{ fontSize: 9 }} />
-                        <YAxis tickFormatter={(value) => `$${Math.round(Number(value) / 1000000)}M`} tick={{ fontSize: 9 }} />
-                        <Tooltip formatter={(value) => money.format(Number(value))} />
-                        <Bar dataKey={result.low.label} fill="#2c4975" radius={[4, 4, 0, 0]}>
-                          <LabelList dataKey={result.low.label} content={(labelProps) => reportVerticalMoneyLabel({
-                            x: labelProps.x,
-                            y: labelProps.y,
-                            width: labelProps.width,
-                            value: labelProps.value,
-                            color: '#2c4975',
-                          })} />
-                        </Bar>
-                        <Bar dataKey={result.high.label} fill="#22b4c7" radius={[4, 4, 0, 0]}>
-                          <LabelList dataKey={result.high.label} content={(labelProps) => reportVerticalMoneyLabel({
-                            x: labelProps.x,
-                            y: labelProps.y,
-                            width: labelProps.width,
-                            value: labelProps.value,
-                            color: '#0f766e',
-                          })} />
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="report-chart-card">
-                    <h3>Distribución del ahorro</h3>
-                    <ResponsiveContainer width="100%" height={210}>
-                      <PieChart>
-                        <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={44} outerRadius={76} paddingAngle={2} label={reportPieLabel} labelLine={false}>
-                          {pieData.map((_, index) => <Cell key={index} fill={colors[index % colors.length]} />)}
-                        </Pie>
-                        <Tooltip formatter={(value) => money.format(Number(value))} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </section>
-                <section className="report-table-block">
-                  <h3>Detalle económico mensual</h3>
-                  <table>
-                    <thead><tr><th>Rubro</th><th>{result.low.label}</th><th>{result.high.label}</th><th>Ahorro</th></tr></thead>
-                    <tbody>
-                      {result.rows.map((row) => <tr key={row.rubro}><td>{row.rubro}</td><td>{money.format(row.low)}</td><td>{money.format(row.high)}</td><td>{money.format(row.saving)}</td></tr>)}
-                    </tbody>
-                  </table>
-                </section>
-              </> : <>
-                <section className="technical-grid">
-                  <div className="report-table-block">
-                    <h3>Métricas principales</h3>
-                    <table>
-                      <tbody>{reportMetrics.map(([label, value]) => <tr key={label}><td>{label}</td><td>{value}</td></tr>)}</tbody>
-                    </table>
-                  </div>
-                  <div className="report-table-block">
-                    <h3>Equivalencias operativas</h3>
-                    <table>
-                      <tbody>
-                        <tr><td>Contenido base</td><td>{number.format(result.low.contentMg)} mg por vial</td></tr>
-                        <tr><td>Contenido comparado</td><td>{number.format(result.high.contentMg)} mg por vial</td></tr>
-                        <tr><td>Miligramos mensuales requeridos</td><td>{number.format(lowMg)} mg</td></tr>
-                        <tr><td>Viales equivalentes alta concentración</td><td>{number.format(result.equivalentHighVials)}</td></tr>
-                        <tr><td>Costo por mg base</td><td>{moneyOneDecimal.format(result.costPerMg.low)}</td></tr>
-                        <tr><td>Costo por mg comparado</td><td>{moneyOneDecimal.format(result.costPerMg.high)}</td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-                <section className="report-table-block">
-                  <h3>Detalle técnico por rubro</h3>
-                  <table>
-                    <thead><tr><th>Rubro</th><th>Base</th><th>Comparado</th><th>Diferencia</th><th>% ahorro</th></tr></thead>
-                    <tbody>
-                      {result.rows.map((row) => <tr key={row.rubro}><td>{row.rubro}</td><td>{money.format(row.low)}</td><td>{money.format(row.high)}</td><td>{money.format(row.saving)}</td><td>{percent.format(row.savingPct)}</td></tr>)}
-                    </tbody>
-                  </table>
-                </section>
-                <section className="technical-grid compact">
-                  <div className="report-table-block">
-                    <h3>Tiempos</h3>
-                    <table><tbody><tr><td>Químico evitado</td><td>{number.format(result.time.savedPharmacistMinutes)} min/mes</td></tr><tr><td>Regente + recepción evitado</td><td>{number.format(result.time.savedAssistantMinutes)} min/mes</td></tr><tr><td>Total evitado</td><td>{number.format(result.time.savedMonthly)} min/mes</td></tr></tbody></table>
-                  </div>
-                  <div className="report-table-block">
-                    <h3>Residuos y almacenamiento</h3>
-                    <table><tbody><tr><td>Residuo mensual base</td><td>{number.format(result.waste.lowKg)} kg</td></tr><tr><td>Residuo mensual comparado</td><td>{number.format(result.waste.highKg)} kg</td></tr><tr><td>Espacio mensual liberado</td><td>{number.format(result.storage.savedM3)} m³</td></tr></tbody></table>
-                  </div>
-                </section>
-              </>}
+            <article className={`report-sheet report-sheet-current ${reportVersion === 'technical' ? 'technical-report' : ''}`}>
+              {reportHeader(reportVersion === 'charts' ? 'Resumen ejecutivo con gráficos' : 'Informe técnico de equivalencias y métricas')}
+              {reportSummary}
+              {reportVersion === 'charts' ? <>{reportKpiStrip}{reportCharts}</> : reportTechnical}
             </article>
+
+            <div className="print-report-packet" aria-hidden="true">
+              <article className="report-sheet print-report-sheet">
+                {reportHeader('Resumen ejecutivo con gráficos')}
+                {reportSummary}
+                {reportKpiStrip}
+                {reportCharts}
+              </article>
+              <article className="report-sheet print-report-sheet technical-report">
+                {reportHeader('Informe técnico de equivalencias y métricas')}
+                {reportSummary}
+                {reportTechnical}
+              </article>
+            </div>
           </section>
         )}
 
