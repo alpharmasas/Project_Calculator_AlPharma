@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, Boxes, Calculator, ClipboardList, Clock3, FileText, Leaf, Printer, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
+import { BarChart3, Boxes, Calculator, ClipboardList, Clock3, FileText, Leaf, Printer, Recycle, ShieldCheck, Sparkles, Users, WalletCards } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { calculate, type Inputs } from './calculator';
 import { defaults, presentations } from './data';
@@ -210,6 +210,10 @@ function App() {
     setInputs((current) => ({ ...current, [key]: numericValue(value, Number(current[key])) }));
   };
 
+  const updateText = (key: 'institution' | 'user', value: string) => {
+    setInputs((current) => ({ ...current, [key]: value }));
+  };
+
   const currencyInputValue = (key: keyof Inputs) => (
     editingCurrencyField === key ? String(inputs[key]) : currencyInput(Number(inputs[key]))
   );
@@ -305,8 +309,14 @@ function App() {
                 <label>Salario regente<input inputMode="numeric" {...currencyInputHandlers('assistantSalary')} /></label>
                 <label>Precio {result.low.label}<input inputMode="numeric" {...currencyInputHandlers('lowPrice')} /></label>
                 <label>Precio {result.high.label}<input inputMode="numeric" {...currencyInputHandlers('highPrice')} /></label>
-                <label className="storage-input">Costo de uso del metro cúbico
+                <label className="storage-input">Costo metro cúbico
                   <input inputMode="numeric" {...currencyInputHandlers('storageCostM3')} />
+                </label>
+                <label>Institución
+                  <input type="text" value={inputs.institution} onChange={(event) => updateText('institution', event.target.value)} />
+                </label>
+                <label>Usuario
+                  <input type="text" value={inputs.user} onChange={(event) => updateText('user', event.target.value)} />
                 </label>
               </div>
               <div className="equivalence"><ShieldCheck size={18} /> <strong>{number.format(inputs.monthlyVials)} viales de {result.low.label}</strong><span>se suplen con {number.format(result.equivalentHighVials)} viales de {result.high.label}.</span></div>
@@ -624,7 +634,6 @@ function App() {
                 <div>
                   <span>Informe de comparación farmacéutica</span>
                   <h2>{reportVersion === 'charts' ? 'Resumen ejecutivo con gráficos' : 'Informe técnico de equivalencias y métricas'}</h2>
-                  <p>Fecha de consulta: {consultationDate}</p>
                 </div>
               </header>
 
@@ -639,19 +648,44 @@ function App() {
                   <strong>{result.high.label}</strong>
                   <small>{number.format(result.equivalentHighVials)} viales equivalentes</small>
                 </div>
-                <div>
-                  <span>Ahorro mensual</span>
-                  <strong>{money.format(result.totalSaving)}</strong>
-                  <small>{percent.format(result.totalSavingPct)} frente a {result.low.label}</small>
-                </div>
-                <div>
-                  <span>Proyección anual</span>
-                  <strong>{money.format(result.annualSaving)}</strong>
-                  <small>{number.format(result.waste.savedAnnualKg)} kg de residuos evitados</small>
+                <div className="report-info-card">
+                  <span>Institución</span>
+                  <strong>{inputs.institution || 'Sin registrar'}</strong>
+                  <span>Usuario</span>
+                  <strong>{inputs.user || 'Sin registrar'}</strong>
+                  <span>Fecha de consulta</span>
+                  <strong>{consultationDate}</strong>
                 </div>
               </section>
 
               {reportVersion === 'charts' ? <>
+                <section className="report-kpi-strip" aria-label="Indicadores destacados del informe">
+                  <article>
+                    <WalletCards size={16} />
+                    <span>Costo ahorro en plata</span>
+                    <strong>{money.format(result.totalSaving)}</strong>
+                    <small>{money.format(result.annualSaving)} proyectado al año</small>
+                  </article>
+                  <article>
+                    <Users size={16} />
+                    <span>Recurso humano</span>
+                    <strong>{number.format(result.time.savedMonthly / 60)} h/mes</strong>
+                    <small>{money.format(result.time.salarySavingAnnual)} ahorrados al año</small>
+                  </article>
+                  <article>
+                    <Boxes size={16} />
+                    <span>Almacenamiento</span>
+                    <strong>{money.format(result.storage.annualSaving)}</strong>
+                    <small>{number.format(result.storage.savedM3)} m3 liberados al mes</small>
+                  </article>
+                  <article>
+                    <Recycle size={16} />
+                    <span>Recolección desechos</span>
+                    <strong>{money.format(result.waste.savedIncinerationAnnual)}</strong>
+                    <small>{number.format(result.waste.savedAnnualKg)} kg evitados al año</small>
+                  </article>
+                </section>
+
                 <section className="report-charts">
                   <div className="report-chart-card">
                     <h3>Costos mensuales por unidad generadora</h3>

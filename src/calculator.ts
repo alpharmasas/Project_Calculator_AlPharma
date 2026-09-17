@@ -1,6 +1,8 @@
 import type { Presentation } from './data';
 
 export type Inputs = {
+  institution: string;
+  user: string;
   lowId: string;
   highId: string;
   monthlyVials: number;

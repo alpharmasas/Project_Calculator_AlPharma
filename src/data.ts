@@ -13,6 +13,8 @@ export type Presentation = {
 };
 
 export const defaults = {
+  institution: '',
+  user: '',
   lowId: 'Mustal_50mg',
   highId: 'Mustal_500mg',
   monthlyVials: 100,
