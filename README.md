@@ -98,9 +98,7 @@ Contiene el diseno visual de la aplicacion:
 
 ### `src/assets/`
 
-Carpeta de recursos estaticos, como el logo de AlPharma.
-
-### `dist/`
+Carpeta de recursos estaticos, como el logoto , he alis
 
 Carpeta generada por Vite para produccion. Es la carpeta publicada por IIS.
 
